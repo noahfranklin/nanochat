@@ -81,6 +81,9 @@ while True:
         "temperature": args.temperature,
         "top_k": args.top_k,
     }
+    # the model never saw sequences longer than its training context, so quality degrades beyond it
+    if len(conversation_tokens) + generate_kwargs["max_tokens"] > model.config.sequence_len:
+        print(f"\n(warning: the conversation is approaching the model's {model.config.sequence_len} token context, responses will degrade. Type 'clear' to start over)")
     response_tokens = []
     print("\nAssistant: ", end="", flush=True)
     for token_column, token_masks in engine.generate(conversation_tokens, **generate_kwargs):
