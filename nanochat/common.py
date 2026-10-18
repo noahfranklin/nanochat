@@ -24,7 +24,7 @@ def _detect_compute_dtype():
         capability = torch.cuda.get_device_capability()
         if capability >= (8, 0):
             return torch.bfloat16, f"auto-detected: CUDA SM {capability[0]}{capability[1]} (bf16 supported)"
-        # fp16 training requires GradScaler (not yet implemented), so fall back to fp32.
+        # fp16 training requires a GradScaler (base_train/chat_sft have one, chat_rl does not), so fall back to fp32.
         # Users can still force fp16 via NANOCHAT_DTYPE=float16 if they know what they're doing.
         return torch.float32, f"auto-detected: CUDA SM {capability[0]}{capability[1]} (pre-Ampere, bf16 not supported, using fp32)"
     # Note: MPS on recent macOS also handles bf16 fine, opt in via NANOCHAT_DTYPE=bfloat16
@@ -104,14 +104,18 @@ def download_file_with_lock(url, filename, postprocess_fn=None):
         with urllib.request.urlopen(url) as response:
             content = response.read() # bytes
 
-        # Write to local file
-        with open(file_path, 'wb') as f:
+        # Write to a temp file and only move it into place after the postprocess also
+        # succeeded, so an interrupted run can't leave a file behind that skips it forever
+        temp_path = file_path + ".tmp"
+        with open(temp_path, 'wb') as f:
             f.write(content)
-        print(f"Downloaded to {file_path}")
 
         # Run the postprocess function if provided
         if postprocess_fn is not None:
-            postprocess_fn(file_path)
+            postprocess_fn(temp_path)
+
+        os.replace(temp_path, file_path)
+        print(f"Downloaded to {file_path}")
 
     return file_path
 
