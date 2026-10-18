@@ -104,14 +104,18 @@ def download_file_with_lock(url, filename, postprocess_fn=None):
         with urllib.request.urlopen(url) as response:
             content = response.read() # bytes
 
-        # Write to local file
-        with open(file_path, 'wb') as f:
+        # Write to a temp file and only move it into place after the postprocess also
+        # succeeded, so an interrupted run can't leave a file behind that skips it forever
+        temp_path = file_path + ".tmp"
+        with open(temp_path, 'wb') as f:
             f.write(content)
-        print(f"Downloaded to {file_path}")
 
         # Run the postprocess function if provided
         if postprocess_fn is not None:
-            postprocess_fn(file_path)
+            postprocess_fn(temp_path)
+
+        os.replace(temp_path, file_path)
+        print(f"Downloaded to {file_path}")
 
     return file_path
 
