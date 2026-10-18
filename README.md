@@ -37,7 +37,7 @@ uv sync --extra cpu    # (or) Use for CPU-only / MPS
 source .venv/bin/activate
 ```
 
-For development (adds pytest, matplotlib, ipykernel, transformers, etc.):
+For development (adds pytest, matplotlib, ipykernel, python-dotenv):
 
 ```bash
 uv sync --extra gpu --group dev
@@ -159,6 +159,8 @@ I've published a number of guides that might contain helpful information, most r
 │   ├── dataset.py                  # Download/read utils for pretraining data
 │   ├── engine.py                   # Efficient model inference with KV Cache
 │   ├── execution.py                # Allows the LLM to execute Python code as tool
+│   ├── flash_attention.py          # FA3 with automatic PyTorch SDPA fallback
+│   ├── fp8.py                      # Minimal FP8 training (tensorwise scaling)
 │   ├── gpt.py                      # The GPT nn.Module Transformer
 │   ├── loss_eval.py                # Evaluate bits per byte (instead of loss)
 │   ├── optim.py                    # AdamW + Muon optimizer, 1GPU and distributed
@@ -168,7 +170,7 @@ I've published a number of guides that might contain helpful information, most r
 │   ├── miniseries.sh               # Miniseries training script
 │   ├── runcpu.sh                   # Small example of how to run on CPU/MPS
 │   ├── scaling_laws.sh             # Scaling laws experiments
-│   └── speedrun.sh                 # Train the ~$100 nanochat d20
+│   └── speedrun.sh                 # Train a GPT-2 grade model (d24) and talk to it
 ├── scripts
 │   ├── base_eval.py                # Base model: CORE score, bits per byte, samples
 │   ├── base_train.py               # Base model: train
@@ -188,8 +190,10 @@ I've published a number of guides that might contain helpful information, most r
 │   └── smoltalk.py                 # Conglomerate dataset of SmolTalk from HF
 ├── tests
 │   ├── test_attention_fallback.py  # FA3/SDPA attention fallback
+│   ├── test_common.py              # Download utilities
 │   ├── test_engine.py              # Inference engine, KV cache
 │   ├── test_execution.py           # Sandboxed code execution
+│   ├── test_gpt.py                 # FLOPs accounting
 │   ├── test_optim.py               # MuonAdamW optimizer (needs GPU)
 │   ├── test_tasks.py               # Task slicing, mixtures, HubDataset
 │   └── test_tokenizer.py           # BPE round-trips, chat rendering
