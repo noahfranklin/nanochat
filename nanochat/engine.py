@@ -206,7 +206,11 @@ class Engine:
         logits = logits[:, -1, :].expand(num_samples, -1)  # (num_samples, vocab_size)
 
         # 2) Replicate the KV cache for each sample/row
-        kv_length_hint = (len(tokens) + max_tokens) if max_tokens is not None else self.model.config.sequence_len
+        # Without a max_tokens limit, generate up to the context length the model was trained on.
+        # Every generated token (sampled or forced) takes one KV cache slot, so this bounds the cache.
+        if max_tokens is None:
+            max_tokens = max(self.model.config.sequence_len - len(tokens), 0)
+        kv_length_hint = len(tokens) + max_tokens
         kv_cache_decode = KVCache(
             batch_size=num_samples,
             seq_len=kv_length_hint,

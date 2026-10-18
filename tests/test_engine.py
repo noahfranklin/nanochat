@@ -265,3 +265,23 @@ def test_different_seeds_introduce_variation_when_temperature_nonzero():
 
     # Sanity check: sampling actually introduces variation
     assert len(outputs) > 1, "All seeds produced the same output which is statistically highly improbable."
+
+
+class BoundedMockModel(MockModel):
+    """Mock model that, like the real attention, cannot write past the end of the KV cache."""
+    def forward(self, ids, kv_cache=None):
+        if kv_cache is not None:
+            assert kv_cache.get_pos() + ids.size(1) <= kv_cache.max_seq_len, "KV cache overflow"
+        return super().forward(ids, kv_cache)
+
+
+def test_unbounded_generation_stays_within_kv_cache():
+    """max_tokens=None generates up to the model's context length, never past the KV cache."""
+    model = BoundedMockModel()
+    engine = Engine(model, ByteTokenizer())
+    sequence_len = model.config.sequence_len
+    # temperature=0 on uniform logits always picks token 0, so generation never ends by itself
+    for prompt_len in [10, sequence_len - 1, sequence_len + 5]:
+        prompt = [261] + [72] * (prompt_len - 1)
+        results, _ = engine.generate_batch(prompt, max_tokens=None, temperature=0.0)
+        assert len(results[0]) == max(sequence_len, prompt_len)
