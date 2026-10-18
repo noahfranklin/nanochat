@@ -1,0 +1,26 @@
+# Run the CPU test suite on every push and pull request (GPU-only tests skip themselves)
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      # uv.lock is resolved with a 7 day exclude-newer cooldown, --locked needs the same setting
+      UV_EXCLUDE_NEWER: P7D
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --extra cpu --group dev
+      - run: uv run --no-sync pytest -q
